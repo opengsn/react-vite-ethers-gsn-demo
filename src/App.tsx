@@ -1,10 +1,43 @@
-import { useState } from 'react'
+import {useEffect, useRef, useState} from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
+import { BrowserProvider, Contract } from 'ethers'
+import { RelayProvider } from '@opengsn/provider'
+
+const targetFunctionAbiEntry = {
+    "inputs": [],
+    "name": "captureTheFlag",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+}
+
+const acceptEverythingPaymasterGoerli = '0x7e4123407707516bD7a3aFa4E3ebCeacfcbBb107'
+const sampleErc2771RecipientAddress = '0xD1cfA489F7eABf322C5EE1B3779ca6Be9Ce08a8e'
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [ready, setReady] = useState(false)
+
+  const contract = useRef<Contract | null>(null)
+
+  useEffect(() => {
+    // @ts-ignore
+    const ethereum = window.ethereum;
+    const ethersProvider = new BrowserProvider(ethereum)
+      RelayProvider.newEthersV6Provider({
+      provider: ethersProvider,
+      config: {
+        paymasterAddress: acceptEverythingPaymasterGoerli
+      }
+    }).then(
+      ({gsnSigner}) => {
+        console.log('RelayProvider init success')
+        contract.current = new Contract(sampleErc2771RecipientAddress, [targetFunctionAbiEntry], gsnSigner)
+        setReady(true)
+      })
+  }, [])
 
   return (
     <>
@@ -16,17 +49,25 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1>GSN + Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+          {
+              ready ? <button onClick={
+                  () => {
+                      contract.current?.captureTheFlag()
+                  }
+              }> captureTheFlag()
+              </button> : <div> Initializing GSN Provider</div>
+          }
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
+      </p>
+      <p className="read-the-docs">
+        Open Developer Tools for logs, connect MetaMask account and select Goerli network to make a GSN transaction.
       </p>
     </>
   )
