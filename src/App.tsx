@@ -17,11 +17,21 @@ const targetFunctionAbiEntry = {
 const acceptEverythingPaymasterGoerli = '0x7e4123407707516bD7a3aFa4E3ebCeacfcbBb107'
 const sampleErc2771RecipientAddress = '0xD1cfA489F7eABf322C5EE1B3779ca6Be9Ce08a8e'
 
+async function connect() {
+  const injected = (window as any).ethereum
+  if (injected) {
+    await injected.request({ method: "eth_requestAccounts" });
+  } else {
+    console.log("No MetaMask wallet to connect to");
+  }
+}
+
 function App() {
   const [ready, setReady] = useState(false)
 
   const contract = useRef<Contract | null>(null)
 
+  connect()
   useEffect(() => {
     // @ts-ignore
     const ethereum = window.ethereum;
